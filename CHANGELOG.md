@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.30.1 - 2026-06-23
+* Added a new "Git Graph: Switch Repository..." command to switch repositories from the Command Palette.
+* Added keyboard navigation to dropdown filters, allowing `Up` / `Down` to choose a filtered option and `Enter` to select it.
+
 ## 1.30.0 - 2021-04-05
 * #395 Added a "Force Fetch" option onto the "Fetch into Local Branch" Dialog, allowing any local branch (that's not checked out) to be reset to the remote branch. This dialog is accessed via the Remote Branch Context Menu.
 * #457 New "View Diff with Working File" action on the File Context Menu in the Commit Details View.

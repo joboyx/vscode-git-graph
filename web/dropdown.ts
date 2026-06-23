@@ -18,6 +18,7 @@ class Dropdown {
 	private dropdownVisible: boolean = false;
 	private lastClicked: number = 0;
 	private doubleClickTimeout: number | null = null;
+	private keyboardFocus: number | null = null;
 
 	private readonly elem: HTMLElement;
 	private readonly currentValueElem: HTMLDivElement;
@@ -86,7 +87,11 @@ class Dropdown {
 			}
 		}, true);
 		document.addEventListener('contextmenu', () => this.close(), true);
-		this.filterInput.addEventListener('keyup', () => this.filter());
+		this.filterInput.addEventListener('keydown', (e) => this.onFilterInputKeyDown(e));
+		this.filterInput.addEventListener('keyup', (e) => {
+			if (isKeyboardNavigationEvent(e)) return;
+			this.filter();
+		});
 	}
 
 	/**
@@ -208,6 +213,7 @@ class Dropdown {
 	public close() {
 		this.elem.classList.remove('dropdownOpen');
 		this.dropdownVisible = false;
+		this.keyboardFocus = null;
 		this.clearDoubleClickTimeout();
 	}
 
@@ -247,14 +253,80 @@ class Dropdown {
 	 * Filter the options displayed in the dropdown list, based on the filter criteria specified by the user.
 	 */
 	private filter() {
-		let val = this.filterInput.value.toLowerCase(), match, matches = false;
+		let val = this.filterInput.value.toLowerCase(), match, matches = false, firstMatch: number | null = null;
 		for (let i = 0; i < this.options.length; i++) {
 			match = this.options[i].name.toLowerCase().indexOf(val) > -1;
 			(<HTMLElement>this.optionsElem.children[i]).style.display = match ? 'block' : 'none';
-			if (match) matches = true;
+			if (match) {
+				matches = true;
+				if (firstMatch === null) firstMatch = i;
+			}
 		}
+		this.keyboardFocus = firstMatch;
+		this.renderKeyboardFocus();
 		this.filterInput.style.display = 'block';
 		this.noResultsElem.style.display = matches ? 'none' : 'block';
+	}
+
+	/**
+	 * Handle keyboard navigation in the dropdown filter input.
+	 * @param e The keyboard event.
+	 */
+	private onFilterInputKeyDown(e: KeyboardEvent) {
+		if (e.key === 'ArrowDown' || e.keyCode === 40) {
+			this.moveKeyboardFocus(1);
+			handledEvent(e);
+		} else if (e.key === 'ArrowUp' || e.keyCode === 38) {
+			this.moveKeyboardFocus(-1);
+			handledEvent(e);
+		} else if (e.key === 'Enter' || e.keyCode === 13) {
+			if (this.keyboardFocus !== null) {
+				this.onOptionClick(this.keyboardFocus);
+				handledEvent(e);
+			}
+		}
+	}
+
+	/**
+	 * Move the keyboard focus between filtered dropdown options.
+	 * @param direction The direction to move, either 1 for down or -1 for up.
+	 */
+	private moveKeyboardFocus(direction: number) {
+		const visibleOptions = this.getVisibleOptions();
+		if (visibleOptions.length === 0) return;
+
+		const currentVisibleOptionIndex = this.keyboardFocus !== null ? visibleOptions.indexOf(this.keyboardFocus) : -1;
+		const nextVisibleOptionIndex = currentVisibleOptionIndex === -1
+			? direction > 0 ? 0 : visibleOptions.length - 1
+			: (currentVisibleOptionIndex + direction + visibleOptions.length) % visibleOptions.length;
+		this.keyboardFocus = visibleOptions[nextVisibleOptionIndex];
+		this.renderKeyboardFocus();
+	}
+
+	/**
+	 * Get the option indexes that are visible after filtering.
+	 * @returns The visible option indexes.
+	 */
+	private getVisibleOptions() {
+		let visibleOptions = [];
+		for (let i = 0; i < this.optionsElem.children.length; i++) {
+			if ((<HTMLElement>this.optionsElem.children[i]).style.display !== 'none') {
+				visibleOptions.push(i);
+			}
+		}
+		return visibleOptions;
+	}
+
+	/**
+	 * Render the keyboard focus state on dropdown options.
+	 */
+	private renderKeyboardFocus() {
+		for (let i = 0; i < this.optionsElem.children.length; i++) {
+			alterClass(<HTMLElement>this.optionsElem.children[i], CLASS_ACTIVE, this.keyboardFocus === i);
+		}
+		if (this.keyboardFocus !== null) {
+			(<HTMLElement>this.optionsElem.children[this.keyboardFocus]).scrollIntoView({ block: 'nearest' });
+		}
 	}
 
 	/**
@@ -358,4 +430,8 @@ class Dropdown {
 			this.doubleClickTimeout = null;
 		}
 	}
+}
+
+function isKeyboardNavigationEvent(e: KeyboardEvent) {
+	return e.key === 'ArrowDown' || e.keyCode === 40 || e.key === 'ArrowUp' || e.keyCode === 38 || e.key === 'Enter' || e.keyCode === 13;
 }

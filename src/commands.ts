@@ -53,6 +53,7 @@ export class CommandManager extends Disposable {
 		this.registerCommand('git-graph.fetch', () => this.fetch());
 		this.registerCommand('git-graph.endAllWorkspaceCodeReviews', () => this.endAllWorkspaceCodeReviews());
 		this.registerCommand('git-graph.endSpecificWorkspaceCodeReview', () => this.endSpecificWorkspaceCodeReview());
+		this.registerCommand('git-graph.switchRepository', () => this.switchRepository());
 		this.registerCommand('git-graph.resumeWorkspaceCodeReview', () => this.resumeWorkspaceCodeReview());
 		this.registerCommand('git-graph.version', () => this.version());
 		this.registerCommand('git-graph.openFile', (arg) => this.openFile(arg));
@@ -233,6 +234,40 @@ export class CommandManager extends Disposable {
 			GitGraphView.createOrShow(this.context.extensionPath, this.dataSource, this.extensionState, this.avatarManager, this.repoManager, this.logger, {
 				repo: repoPaths[0],
 				runCommandOnLoad: 'fetch'
+			});
+		} else {
+			GitGraphView.createOrShow(this.context.extensionPath, this.dataSource, this.extensionState, this.avatarManager, this.repoManager, this.logger, null);
+		}
+	}
+
+	/**
+	 * The method run when the `git-graph.switchRepository` command is invoked.
+	 */
+	private switchRepository() {
+		const repos = this.repoManager.getRepos();
+		const repoPaths = getSortedRepositoryPaths(repos, getConfig().repoDropdownOrder);
+
+		if (repoPaths.length > 1) {
+			const items: vscode.QuickPickItem[] = repoPaths.map((path) => ({
+				label: repos[path].name || getRepoName(path),
+				description: path
+			}));
+
+			vscode.window.showQuickPick(items, {
+				placeHolder: 'Select the repository you want to open in Git Graph:',
+				canPickMany: false
+			}).then((item) => {
+				if (item && item.description) {
+					GitGraphView.createOrShow(this.context.extensionPath, this.dataSource, this.extensionState, this.avatarManager, this.repoManager, this.logger, {
+						repo: item.description
+					});
+				}
+			}, () => {
+				showErrorMessage('An unexpected error occurred while running the command "Switch Repository".');
+			});
+		} else if (repoPaths.length === 1) {
+			GitGraphView.createOrShow(this.context.extensionPath, this.dataSource, this.extensionState, this.avatarManager, this.repoManager, this.logger, {
+				repo: repoPaths[0]
 			});
 		} else {
 			GitGraphView.createOrShow(this.context.extensionPath, this.dataSource, this.extensionState, this.avatarManager, this.repoManager, this.logger, null);
