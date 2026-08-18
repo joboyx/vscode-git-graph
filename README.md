@@ -155,6 +155,7 @@ This extension contributes the following commands:
 * `git-graph.fetch`: Git Graph: Fetch from Remote(s) _(used to open the Git Graph View and immediately run "Fetch from Remote(s)")_
 * `git-graph.removeGitRepository`: Git Graph: Remove Git Repository... _(used to remove repositories from Git Graph)_
 * `git-graph.resumeWorkspaceCodeReview`: Git Graph: Resume a specific Code Review in Workspace... _(used to open the Git Graph View to a Code Review that is already in progress)_
+* `git-graph.switchRepository`: Git Graph: Switch Repository... _(used to switch the repository open in the Git Graph View)_
 * `git-graph.version`: Git Graph: Get Version Information
 
 ## Release Notes
